@@ -2,7 +2,8 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
-canvas.style.border = '1px solid #6198d8';
+canvas.style.border = '1px solid #fff';
+canvas.style.backgroundColor = '#111';
 ctx.lineWidth = 1;
 
 //Importation des éléments du DOM
@@ -25,20 +26,42 @@ closeBtn.addEventListener('click', () => {
     isPaused = false;
 });
 
+
+
 //variables nécessaires
 let leftArrow = false;
 let rightArrow = false;
 let gameOver = false;
 let isPaused = false;
-let life = 10;
+let life = 2;
 let score = 0;
 let level = 1;
 
+//Pause
+document.addEventListener('keydown', (e) => {
+    if(e.key === 'p'){
+        console.log(isPaused);
+        isPaused = !isPaused;
+    }
+});
+
+//ajouter life
+document.addEventListener('keydown', (e) =>{
+    if(e.key === 'i'){
+    life += 1;
+    }
+});
+//ajouter level
+document.addEventListener('keydown', (e) =>{
+    if(e.key === 'n'){
+    level += 1;
+    }
+});
 
 //Constantes nécessaires
-const PADDLE_WIDTH = 100;
-const PADDLE_MARGIN_BOTTOM = 20;
-const PADDLE_HEIGHT = 10;
+const PADDLE_WIDTH = 88.8;
+const PADDLE_MARGIN_BOTTOM = 10;
+const PADDLE_HEIGHT = 19.2;
 const BALL_RADIUS = 7;
 const SCORE_UNIT = 10;
 const MAX_LEVEL = 3;
@@ -63,7 +86,7 @@ function nextLevel(){
 
     for (let r = 0; r < brickProp.row; r++){
         for (let c = 0; c < brickProp.column; c++){
-            isLevelUp = isLevelUp && !bricks[r][c].status;
+            isLevelUp = isLevelUp && !yellowBricks[r][c].status;
         }
     }
 
@@ -75,8 +98,8 @@ function nextLevel(){
             return;
         }
 
-        brickProp.row += 2;
-        createBricks();
+        createYellowBricks();
+        createGreenBricks();
         ball.velocity += .5;
         resetBall();
         resetPaddle();
@@ -95,11 +118,9 @@ const paddle = {
 
 //Dessiner la planche
 function drawPaddle(){
+    
     ctx.beginPath();
-    ctx.fillStyle = '#6198d8';
-    ctx.fillRect(paddle.x, paddle.y, paddle.w, paddle.h);
-    ctx.strokeStyle = '#6198d8';
-    ctx.strokeRect(paddle.x, paddle.y, paddle.w, paddle.h);
+    ctx.drawImage(PADDLE_IMG, paddle.x, paddle.y, paddle.w, paddle.h);
     ctx.closePath();
 }
 
@@ -121,12 +142,10 @@ const ball = {
 //Dessiner la balle
 function drawBall(){
     ctx.beginPath; 
-    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-    ctx.fillStyle= '#6198d8';
-    ctx.fill();
-    ctx.strokeStyle = '#fff';
-    ctx.stroke();
+    ctx.drawImage(BALL_IMG, ball.x, ball.y, 15, 15);
     ctx.closePath();
+    
+    
 }
 
 //Mouvement de la balle
@@ -168,25 +187,25 @@ function resetBall(){
 
 //Propriétés des briques
 const brickProp = {
-    row : 2,
-    column : 13,
-    w : 35,
-    h : 10,
-    padding : 3,
+    row : 4,
+    column : 11,
+    w : 40,
+    h : 20,
+    padding : 0,
     offsetX : 55,
     offsetY : 40,
     fillColor :'#6198d8',
     visible : true,
 }
 
-//Création de toutes les briques
-let bricks = [];
-function createBricks(){
+//Création des briques jaunes
+let yellowBricks = [];
+function createYellowBricks(){
     for (let r = 0; r < brickProp.row; r++){
-        bricks[r] = [];
+        yellowBricks[r] = [];
     
         for (let c = 0; c < brickProp.column; c++){
-        bricks[r][c] = {
+        yellowBricks[r][c] = {
             x: c * (brickProp.w + brickProp.padding) + brickProp.offsetX,
             y: r * (brickProp.h + brickProp.padding) + brickProp.offsetY,
             status : true,
@@ -196,36 +215,83 @@ function createBricks(){
     }
 }
 
-createBricks();
+createYellowBricks();
 
-//Dessiner les briques
-function drawBricks(){
-    bricks.forEach(column => {
-        column.forEach(brick => {
-            if (brick.status) {
-                ctx.beginPath();
-                ctx.rect(brick.x, brick.y, brick.w, brick.h);
-                ctx.fillStyle = brick.fillColor;
-                ctx.fill();
-                ctx.closePath();
+
+
+//Dessiner les briques jaunes
+function drawYellowBricks(){
+    yellowBricks.forEach(column => {
+        column.forEach(yellowBrick => {
+            if (yellowBrick.status) {
+               ctx.drawImage(YELLOW_BRICK_IMG, yellowBrick.x, yellowBrick.y, yellowBrick.w, yellowBrick.h);
+            }
+        })
+    })
+}
+//Collision balle et briques jaunes
+function bybCollision(){
+    yellowBricks.forEach(column => {
+        column.forEach(yellowBrick => {
+            if(yellowBrick.status){
+            
+                if(ball.x + ball.radius > yellowBrick.x + 5 && 
+                ball.x - ball.radius < yellowBrick.x + yellowBrick.w - 5 &&
+                ball.y + ball.radius > yellowBrick.y  && 
+                ball.y - ball.radius < yellowBrick.y + yellowBrick.h  ){
+                    BRICK_HIT.play();
+                    ball.dy *= -1;
+                    yellowBrick.status = false;
+                    score += SCORE_UNIT;
+                  }
+            }
+        })
+    })
+
+}
+//Création des briques vertes
+let greenBricks = [];
+function createGreenBricks(){
+    for (let r = 0; r < brickProp.row; r++){
+        greenBricks[r] = [];
+    
+        for (let c = 0; c < brickProp.column; c++){
+        greenBricks[r][c] = {
+            x: c * (brickProp.w + brickProp.padding) + brickProp.offsetX,
+            y: r * (brickProp.h + brickProp.padding) + brickProp.offsetY,
+            status : true,
+            ...brickProp
+        }
+    }
+    }
+}
+
+createGreenBricks();
+//Dessiner les briques vertes
+function drawGreenBricks(){
+    greenBricks.forEach(column => {
+        column.forEach(greenBrick => {
+            if (greenBrick.status) {
+               ctx.drawImage(GREEN_BRICK_IMG, greenBrick.x, greenBrick.y, greenBrick.w, greenBrick.h);
             }
         })
     })
 }
 
-//Collision balle et briques
-function bbCollision(){
-    bricks.forEach(column => {
-        column.forEach(brick => {
-            if(brick.status){
+
+//Collision balle et briques vertes
+function bgbCollision(){
+    greenBricks.forEach(column => {
+        column.forEach(greenBrick => {
+            if(greenBrick.status){
             
-                if(ball.x + ball.radius > brick.x  && 
-                ball.x - ball.radius < brick.x + brick.w &&
-                ball.y + ball.radius > brick.y && 
-                ball.y - ball.radius < brick.y + brick.h ){
+                if(ball.x > greenBrick.x - 20&& 
+                ball.x  < greenBrick.x + greenBrick.w + 20 &&
+                ball.y  > greenBrick.y - 10 && 
+                ball.y  < greenBrick.y + greenBrick.h + 10 ){
                     BRICK_HIT.play();
                     ball.dy *= -1;
-                    brick.status = false;
+                    greenBrick.status = false;
                     score += SCORE_UNIT;
                   }
             }
@@ -255,8 +321,10 @@ function bpCollision(){
 
 //Mise en place des touches de contrôle de la planche
 document.addEventListener('keydown', (e) => {
+    console.log(e.key);
     if (e.key === 'Left' || e.key === 'ArrowLeft') {
         leftArrow = true;
+        
     } else if (e.key === 'Right' || e.key === 'ArrowRight'){
         rightArrow = true;
     }
@@ -271,20 +339,29 @@ document.addEventListener('keyup', (e) => {
 
 //Animation de la planche
 function movePaddle() {
-    if(leftArrow && paddle.x > 0) {
+    if(leftArrow && paddle.x > -5) {
         paddle.x -= paddle.dx;
-    } else if (rightArrow && (paddle.x + paddle.w) < canvas.width) {
+    } else if (rightArrow && (paddle.x + paddle.w) < canvas.width + 5) {
         paddle.x += paddle.dx;
     }
 }
 
+//propriété life
+let life_x = 35;
+let life_y = 5;
+
 //Relatif à tout ce qui concerne l'affichage
 function draw() {
+    ctx.drawImage(BACKGROUND_IMG, 0, 0, canvas.width, canvas.height);
     drawPaddle();
     drawBall();
-    drawBricks();
+    drawYellowBricks();
+
     showStats(SCORE_IMG, canvas.width - 100, 5, score, canvas.width - 65, 22);
-    showStats(LIFE_IMG, 35, 5, life, 70, 22);
+        for(let l = 0; l < life; l++){
+            showStats(LIFE_IMG, life_x, life_y, life, 70, 22);
+            life_x += 10;
+        }
     showStats(LEVEL_IMG, canvas.width/2 - 25, 5, level, canvas.width/2, 22);
 }
 
@@ -294,22 +371,31 @@ function update(){
     moveBall();
     bmCollision();
     bpCollision();
-    bbCollision();
+    bybCollision();
+  
     gameover();
     nextLevel();
 }
 function loop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+
     if(!isPaused){
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);      
     draw();
     
     update();
-    } 
-
-    if(!gameOver){
-    requestAnimationFrame(loop);
     }
-}
+    if(level >= 2){
+        drawGreenBricks();
+        bgbCollision();
+    }
+    
+      if(!gameOver){
+        requestAnimationFrame(loop);
+        }
+     }
+
 
 loop();
 
